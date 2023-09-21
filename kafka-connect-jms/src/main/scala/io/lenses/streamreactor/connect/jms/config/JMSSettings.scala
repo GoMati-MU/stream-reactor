@@ -29,7 +29,6 @@ import org.apache.kafka.common.config.ConfigException
 import org.apache.kafka.common.config.types.Password
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
-import scala.jdk.CollectionConverters.MapHasAsScala
 
 case class JMSSetting(
   source:           String,
@@ -119,7 +118,7 @@ object JMSSettings extends StrictLogging {
     val settings = kcql.map { r =>
       val jmsName = if (sink) r.getTarget else r.getSource
 
-      val converters = JMSConnectorConverters(sink)(r, config.props.asScala.toMap) match {
+      val converters = JMSConnectorConverters(sink)(r, config.props) match {
         case None                    => throw new ConfigException("Converters should not be empty")
         case Some(Left(exception))   => throw exception
         case Some(Right(converters)) => converters

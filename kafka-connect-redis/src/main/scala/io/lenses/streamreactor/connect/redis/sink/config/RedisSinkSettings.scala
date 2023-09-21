@@ -19,24 +19,39 @@ import io.lenses.kcql.Kcql
 import io.lenses.streamreactor.common.errors.ErrorPolicy
 import io.lenses.streamreactor.common.errors.ThrowErrorPolicy
 import io.lenses.streamreactor.common.rowkeys.StringKeyBuilder
+import io.lenses.streamreactor.connect.security.StoresInfo
 import org.apache.kafka.common.config.ConfigException
-import org.apache.kafka.common.config.SslConfigs
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 
+object RedisConnectionInfo {
+  def apply(config: RedisConfig): RedisConnectionInfo = {
+    val host = config.getString(RedisConfigConstants.REDIS_HOST)
+    if (host.isEmpty) new ConfigException(s"[${RedisConfigConstants.REDIS_HOST}] is not set correctly")
+
+    val password = Option(config.getPassword(RedisConfigConstants.REDIS_PASSWORD)).map(_.value())
+
+    val isSslConnection = config.getBoolean(RedisConfigConstants.REDIS_SSL_ENABLED)
+
+    val storesInfo: StoresInfo = StoresInfo(config)
+
+    new RedisConnectionInfo(host            = host,
+                            port            = config.getInt(RedisConfigConstants.REDIS_PORT),
+                            password        = password,
+                            isSslConnection = isSslConnection,
+                            storesInfo      = storesInfo,
+    )
+  }
+
+}
+
 // Redis connection details: host, port, password
 case class RedisConnectionInfo(
-  host:               String,
-  port:               Int,
-  password:           Option[String],
-  isSslConnection:    Boolean        = false,
-  keyPassword:        Option[String] = None,
-  keyStoreType:       Option[String] = None,
-  keyStorePassword:   Option[String] = None,
-  keyStoreFilepath:   Option[String] = None,
-  trustStoreType:     Option[String] = None,
-  trustStorePassword: Option[String] = None,
-  trustStoreFilepath: Option[String] = None,
+  host:            String,
+  port:            Int,
+  password:        Option[String],
+  isSslConnection: Boolean    = false,
+  storesInfo:      StoresInfo = StoresInfo(),
 )
 
 // Sink settings of each Redis KCQL statement
@@ -96,42 +111,4 @@ object RedisSinkSettings {
     RedisSinkSettings(connectionInfo, pkDelimiter, allRedisKCQLSettings, errorPolicy, nbrOfRetries)
   }
 
-}
-
-object RedisConnectionInfo {
-  def apply(config: RedisConfig): RedisConnectionInfo = {
-    val host = config.getString(RedisConfigConstants.REDIS_HOST)
-    if (host.isEmpty) new ConfigException(s"[${RedisConfigConstants.REDIS_HOST}] is not set correctly")
-
-    val password = Option(config.getPassword(RedisConfigConstants.REDIS_PASSWORD)).map(_.value())
-
-    val isSslConnection = config.getBoolean(RedisConfigConstants.REDIS_SSL_ENABLED)
-
-    val trustStoreType = Option(config.getString(SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG))
-    val trustStorePath = Option(config.getString(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG))
-    val trustStorePassword = Option(config.getPassword(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG)) match {
-      case Some(p) => Some(p.value())
-      case None    => None
-    }
-
-    val keyStoreType = Option(config.getString(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG))
-    val keyStorePath = Option(config.getString(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG))
-    val keyStorePassword = Option(config.getPassword(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG)) match {
-      case Some(p) => Some(p.value())
-      case None    => None
-    }
-
-    new RedisConnectionInfo(
-      host               = host,
-      port               = config.getInt(RedisConfigConstants.REDIS_PORT),
-      password           = password,
-      isSslConnection    = isSslConnection,
-      keyStoreType       = keyStoreType,
-      keyStorePassword   = keyStorePassword,
-      keyStoreFilepath   = keyStorePath,
-      trustStoreType     = trustStoreType,
-      trustStorePassword = trustStorePassword,
-      trustStoreFilepath = trustStorePath,
-    )
-  }
 }

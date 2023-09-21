@@ -40,18 +40,17 @@ import io.lenses.streamreactor.connect.cloud.common.storage.ListOfKeysResponse
 import io.lenses.streamreactor.connect.cloud.common.storage.StorageInterface
 import io.lenses.streamreactor.connect.config.kcqlprops.KcqlProperties
 
-import java.util
 import scala.util.Try
 
 object S3SourceConfig {
 
   def fromProps(
-    props: util.Map[String, String],
+    props: Map[String, String],
   ): Either[Throwable, S3SourceConfig] =
     S3SourceConfig(S3SourceConfigDefBuilder(props))
 
   def apply(s3ConfigDefBuilder: S3SourceConfigDefBuilder): Either[Throwable, S3SourceConfig] = {
-    val parsedValues = s3ConfigDefBuilder.getParsedValues
+    val parsedValues = s3ConfigDefBuilder.props
     for {
       sbo <- SourceBucketOptions(
         s3ConfigDefBuilder,

@@ -62,7 +62,8 @@ abstract class CloudSinkTask[SM <: FileMetadata](
 
     printAsciiHeader(manifest, sinkAsciiArtResource)
 
-    new ConnectorTaskIdCreator(connectorPrefix).fromProps(fallbackProps) match {
+    val scalaFallbackProps = fallbackProps.asScala.toMap
+    new ConnectorTaskIdCreator(connectorPrefix).fromProps(scalaFallbackProps) match {
       case Left(value)  => throw new IllegalArgumentException(value)
       case Right(value) => connectorTaskId = value
     }
@@ -70,7 +71,7 @@ abstract class CloudSinkTask[SM <: FileMetadata](
     logger.debug(s"[{}] CloudSinkTask.start", connectorTaskId.show)
 
     val contextProps   = Option(context).flatMap(c => Option(c.configs())).map(_.asScala.toMap).getOrElse(Map.empty)
-    val props          = MapUtils.mergeProps(contextProps, fallbackProps.asScala.toMap)
+    val props          = MapUtils.mergeProps(contextProps, scalaFallbackProps)
     val errOrWriterMan = createWriterMan(props)
 
     errOrWriterMan.leftMap(throw _).foreach(writerManager = _)

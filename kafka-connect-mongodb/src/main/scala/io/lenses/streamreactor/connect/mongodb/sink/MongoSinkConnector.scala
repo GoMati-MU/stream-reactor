@@ -15,6 +15,7 @@
  */
 package io.lenses.streamreactor.connect.mongodb.sink
 
+import cats.implicits.toBifunctorOps
 import io.lenses.streamreactor.common.config.Helpers
 import io.lenses.streamreactor.common.utils.JarManifest
 
@@ -65,8 +66,8 @@ class MongoSinkConnector extends SinkConnector with StrictLogging {
     * @param props A map of properties for the connector and worker
     */
   override def start(props: util.Map[String, String]): Unit = {
-    Helpers.checkInputTopics(MongoConfigConstants.KCQL_CONFIG, props.asScala.toMap)
-    Try(MongoConfig(props)) match {
+    Helpers.checkInputTopics(MongoConfigConstants.KCQL_CONFIG, props.asScala.toMap).leftMap(throw _)
+    Try(MongoConfig(props.asScala.toMap)) match {
       case Failure(f) =>
         throw new ConnectException(s"Couldn't start Mongo sink due to configuration error: ${f.getMessage}", f)
       case _ =>

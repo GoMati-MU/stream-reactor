@@ -23,12 +23,10 @@ import io.lenses.streamreactor.common.config.base.traits.KcqlSettings
 import io.lenses.streamreactor.common.config.base.traits.NumberRetriesSettings
 import io.lenses.streamreactor.common.config.base.traits.UserSettings
 
-import java.util
-
+import com.influxdb.client.domain.WriteConsistency
 import org.apache.kafka.common.config.ConfigDef
 import org.apache.kafka.common.config.ConfigDef.Importance
 import org.apache.kafka.common.config.ConfigDef.Type
-import com.influxdb.client.domain.WriteConsistency
 
 object InfluxConfig {
 
@@ -157,7 +155,7 @@ object InfluxConfig {
   *
   * Holds config, extends AbstractConfig.
   */
-case class InfluxConfig(props: util.Map[String, String])
+case class InfluxConfig(props: Map[String, String])
     extends BaseConfig(InfluxConfigConstants.CONNECTOR_PREFIX, InfluxConfig.config, props)
     with KcqlSettings
     with ErrorPolicySettings

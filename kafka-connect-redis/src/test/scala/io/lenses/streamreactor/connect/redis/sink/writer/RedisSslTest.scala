@@ -31,7 +31,6 @@ import org.scalatest.wordspec.AnyWordSpec
 import redis.clients.jedis.Jedis
 
 import java.net.URI
-import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 /*
@@ -103,7 +102,7 @@ class RedisSslTest extends AnyWordSpec with Matchers with BeforeAndAfterAll with
         SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG   -> "keystore-password",
       )
 
-      val config   = RedisConfig(map.asJava)
+      val config   = RedisConfig(map)
       val settings = RedisSinkSettings(config)
 
       val writer = new RedisCache(settings)
@@ -147,7 +146,7 @@ class RedisSslTest extends AnyWordSpec with Matchers with BeforeAndAfterAll with
         jedis.ping() shouldBe "PONG"
 
         val QUERY_ALL = s"SELECT * FROM $TOPIC PK firstName, child.firstName"
-        val props     = (baseProps + (RedisConfigConstants.KCQL_CONFIG -> QUERY_ALL)).asJava
+        val props     = baseProps + (RedisConfigConstants.KCQL_CONFIG -> QUERY_ALL)
         val config    = RedisConfig(props)
         val settings  = RedisSinkSettings(config)
         val writer    = new RedisCache(settings)

@@ -15,6 +15,7 @@
  */
 package io.lenses.streamreactor.connect.redis.sink
 
+import cats.implicits.toBifunctorOps
 import io.lenses.streamreactor.common.config.Helpers
 import io.lenses.streamreactor.common.utils.JarManifest
 import io.lenses.streamreactor.connect.redis.sink.config.RedisConfig
@@ -62,7 +63,7 @@ class RedisSinkConnector extends SinkConnector with StrictLogging {
     */
   override def start(props: util.Map[String, String]): Unit = {
     logger.info(s"Starting Redis sink task with [${props.toString}].")
-    Helpers.checkInputTopics(RedisConfigConstants.KCQL_CONFIG, props.asScala.toMap)
+    Helpers.checkInputTopics(RedisConfigConstants.KCQL_CONFIG, props.asScala.toMap).leftMap(throw _)
     configProps = props
   }
 

@@ -37,6 +37,7 @@ import javax.jms.Message
 import javax.jms.MessageListener
 import javax.jms.Session
 import javax.jms.TextMessage
+import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.language.reflectiveCalls
 import scala.reflect.io.Path
 import scala.util.Using.{ resource => using }
@@ -110,11 +111,11 @@ class JMSSinkTaskTest extends ItTestBase with BeforeAndAfterAll with MockitoSuga
         topicsSet.add(new TopicPartition(kafkaTopic1, 0))
         topicsSet.add(new TopicPartition(kafkaTopic2, 0))
         when(context.assignment()).thenReturn(topicsSet)
-        when(context.configs()).thenReturn(props)
+        when(context.configs()).thenReturn(props.asJava)
 
         val task = new JMSSinkTask
         task.initialize(context)
-        task.start(props)
+        task.start(props.asJava)
 
         val records = new java.util.ArrayList[SinkRecord]
         records.add(record1)

@@ -24,12 +24,10 @@ import io.lenses.streamreactor.connect.cloud.common.sink.config.OffsetSeekerOpti
 import io.lenses.streamreactor.connect.datalake.config.AzureConfig
 import io.lenses.streamreactor.connect.datalake.config.AzureConfigSettings.SEEK_MAX_INDEX_FILES
 
-import java.util
-
 object DatalakeSinkConfig {
 
   def fromProps(
-    props: util.Map[String, String],
+    props: Map[String, String],
   )(
     implicit
     connectorTaskId:        ConnectorTaskId,
@@ -51,7 +49,7 @@ object DatalakeSinkConfig {
         s3ConfigDefBuilder.getInt(SEEK_MAX_INDEX_FILES),
       )
     } yield DatalakeSinkConfig(
-      AzureConfig(s3ConfigDefBuilder.getParsedValues, authMode),
+      AzureConfig(s3ConfigDefBuilder.props, authMode),
       sinkBucketOptions,
       offsetSeekerOptions,
       s3ConfigDefBuilder.getCompressionCodec(),

@@ -19,6 +19,7 @@ import io.lenses.streamreactor.common.errors.ErrorHandler
 import io.lenses.streamreactor.common.sink.DbWriter
 import io.lenses.streamreactor.connect.redis.sink.config.RedisSinkSettings
 import com.typesafe.scalalogging.StrictLogging
+import io.lenses.streamreactor.connect.security.StoreInfo
 import redis.clients.jedis.Jedis
 
 import java.io.File
@@ -35,30 +36,21 @@ abstract class RedisWriter extends DbWriter with StrictLogging with ErrorHandler
     val connection = sinkSettings.connectionInfo
 
     if (connection.isSslConnection) {
-      connection.keyStoreFilepath match {
-        case Some(path) =>
-          if (!new File(path).exists) {
-            throw new FileNotFoundException(s"Keystore not found in: [$path]")
-          }
-
-          System.setProperty("javax.net.ssl.keyStorePassword", connection.keyStorePassword.getOrElse(""))
+      connection.storesInfo.keyStore.foreach {
+        case StoreInfo(path: String, _, _) if !new File(path).exists =>
+          throw new FileNotFoundException(s"Keystore not found in: [$path]")
+        case StoreInfo(path: String, storeType: Option[String], storePassword: Option[String]) =>
+          System.setProperty("javax.net.ssl.keyStorePassword", storePassword.getOrElse(""))
           System.setProperty("javax.net.ssl.keyStore", path)
-          System.setProperty("javax.net.ssl.keyStoreType", connection.keyStoreType.getOrElse("jceks"))
-
-        case None =>
+          System.setProperty("javax.net.ssl.keyStoreType", storeType.getOrElse("jceks"))
       }
-
-      connection.trustStoreFilepath match {
-        case Some(path) =>
-          if (!new File(path).exists) {
-            throw new FileNotFoundException(s"Truststore not found in: $path")
-          }
-
-          System.setProperty("javax.net.ssl.trustStorePassword", connection.trustStorePassword.getOrElse(""))
+      connection.storesInfo.trustStore.foreach {
+        case StoreInfo(path: String, _, _) if !new File(path).exists =>
+          throw new FileNotFoundException(s"trustStore not found in: [$path]")
+        case StoreInfo(path: String, storeType: Option[String], storePassword: Option[String]) =>
+          System.setProperty("javax.net.ssl.trustStorePassword", storePassword.getOrElse(""))
           System.setProperty("javax.net.ssl.trustStore", path)
-          System.setProperty("javax.net.ssl.trustStoreType", connection.trustStoreType.getOrElse("jceks"))
-
-        case None =>
+          System.setProperty("javax.net.ssl.trustStoreType", storeType.getOrElse("jceks"))
       }
     }
 

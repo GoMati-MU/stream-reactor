@@ -21,10 +21,7 @@ import io.lenses.streamreactor.connect.cloud.common.sink.config.CloudSinkConfigD
 import io.lenses.streamreactor.connect.datalake.config.AuthModeSettings
 import io.lenses.streamreactor.connect.datalake.config.AzureConfigSettings
 
-import java.util
-import scala.jdk.CollectionConverters.MapHasAsScala
-
-case class DatalakeSinkConfigDefBuilder(props: util.Map[String, String])
+case class DatalakeSinkConfigDefBuilder(props: Map[String, String])
     extends BaseConfig(AzureConfigSettings.CONNECTOR_PREFIX, DatalakeSinkConfigDef.config, props)
     with CloudSinkConfigDefBuilder
     with ErrorPolicySettings
@@ -32,8 +29,4 @@ case class DatalakeSinkConfigDefBuilder(props: util.Map[String, String])
     with UserSettings
     with ConnectionSettings
     with CompressionCodecSettings
-    with AuthModeSettings {
-
-  def getParsedValues: Map[String, _] = values().asScala.toMap
-
-}
+    with AuthModeSettings {}

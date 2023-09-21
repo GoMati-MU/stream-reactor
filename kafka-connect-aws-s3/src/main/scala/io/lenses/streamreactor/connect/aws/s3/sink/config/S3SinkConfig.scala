@@ -25,12 +25,10 @@ import io.lenses.streamreactor.connect.cloud.common.sink.config.CloudSinkBucketO
 import io.lenses.streamreactor.connect.cloud.common.sink.config.CloudSinkConfig
 import io.lenses.streamreactor.connect.cloud.common.sink.config.OffsetSeekerOptions
 
-import java.util
-
 object S3SinkConfig {
 
   def fromProps(
-    props: util.Map[String, String],
+    props: Map[String, String],
   )(
     implicit
     connectorTaskId:        ConnectorTaskId,
@@ -51,7 +49,7 @@ object S3SinkConfig {
         s3ConfigDefBuilder.getInt(SEEK_MAX_INDEX_FILES),
       )
     } yield S3SinkConfig(
-      S3Config(s3ConfigDefBuilder.getParsedValues),
+      S3Config(s3ConfigDefBuilder.props),
       sinkBucketOptions,
       offsetSeekerOptions,
       s3ConfigDefBuilder.getCompressionCodec(),
