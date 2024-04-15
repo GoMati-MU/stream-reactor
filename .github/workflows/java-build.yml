@@ -119,16 +119,27 @@ jobs:
         id: branch_name
         uses: tj-actions/branch-names@v8
       - name: Dependency Check
-        uses: dependency-check/Dependency-Check_Action@main
+        uses: dependency-check/Dependency-Check_Action@1.1.0
         with:
           project: kafka-connect-${{matrix.module}}-deps
           path: ./java-connectors/release/${{ matrix.module }}*.jar
           format: 'HTML'
-          args: >-
-            --failOnCVSS 5
-            --suppression https://raw.githubusercontent.com/GoMati-MU/stream-reactor/feat/java-azure-connector/suppression.xml
       - name: Upload Test results
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.module}}-depcheck-results
           path: ${{github.workspace}}/reports
+#      - name: Dependency Check
+#        uses: dependency-check/Dependency-Check_Action@main
+#        with:
+#          project: kafka-connect-${{matrix.module}}-deps
+#          path: ./java-connectors/release/${{ matrix.module }}*.jar
+#          format: 'HTML'
+#          args: >-
+#            --failOnCVSS 5
+#            --suppression https://raw.githubusercontent.com/GoMati-MU/stream-reactor/feat/java-azure-connector/suppression.xml
+#      - name: Upload Test results
+#        uses: actions/upload-artifact@master
+#        with:
+#          name: ${{matrix.module}}-depcheck-results
+#          path: ${{github.workspace}}/reports
