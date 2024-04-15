@@ -60,7 +60,7 @@ jobs:
       - name: Test with Gradle
         run: cd 'java-connectors' && ./gradlew ${{ matrix.module }}:test
 
-  build-and-dependency-check:
+  build-and-cache:
     needs:
       - test
       - initiate
@@ -101,7 +101,7 @@ jobs:
 
   jar-dependency-check:
     needs:
-      - build-and-dependency-check
+      - build-and-cache
       - initiate
     timeout-minutes: 30
     runs-on: ubuntu-latest
@@ -126,7 +126,7 @@ jobs:
           format: 'HTML'
           args: >-
             --failOnCVSS 5
-            --suppression https://raw.githubusercontent.com/${{ github.event.pull_request.head.repo.owner.login }}/${{github.event.repository.name}}/${{ steps.branch_name.outputs.tag }}${{ steps.branch_name.outputs.current_branch }}/suppression.xml
+            --suppression https://raw.githubusercontent.com/GoMati-MU/stream-reactor/feat/java-azure-connector/suppression.xml
       - name: Upload Test results
         uses: actions/upload-artifact@master
         with:
