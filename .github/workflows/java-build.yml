@@ -124,6 +124,9 @@ jobs:
           project: kafka-connect-${{matrix.module}}-deps
           path: ./java-connectors/release/${{ matrix.module }}*.jar
           format: 'HTML'
+          args: >-
+            --failOnCVSS 5
+            --suppression https://raw.githubusercontent.com/GoMati-MU/stream-reactor/feat/java-azure-connector/suppression.xml
       - name: Upload Test results
         uses: actions/upload-artifact@master
         with:
