@@ -39,10 +39,10 @@ import io.lenses.streamreactor.connect.cloud.common.sink.naming.TopicPartitionOf
 object CloudSinkBucketOptions extends LazyLogging {
 
   def apply(
-    config: CloudSinkConfigDefBuilder,
+    connectorTaskId: ConnectorTaskId,
+    config:          CloudSinkConfigDefBuilder,
   )(
     implicit
-    connectorTaskId:        ConnectorTaskId,
     cloudLocationValidator: CloudLocationValidator,
   ): Either[Throwable, Seq[CloudSinkBucketOptions]] =
     config.getKCQL.map { kcql: Kcql =>
@@ -66,7 +66,7 @@ object CloudSinkBucketOptions extends LazyLogging {
           )
         }
         keyNamer         = CloudKeyNamer(formatSelection, partitionSelection, fileNamer, paddingService)
-        stagingArea     <- config.getLocalStagingArea()
+        stagingArea     <- config.getLocalStagingArea()(connectorTaskId)
         target          <- CloudLocation.splitAndValidate(kcql.getTarget)
         storageSettings <- DataStorageSettings.from(sinkProps)
         _               <- validateEnvelopeAndFormat(formatSelection, storageSettings)
@@ -76,12 +76,11 @@ object CloudSinkBucketOptions extends LazyLogging {
         CloudSinkBucketOptions(
           Option(kcql.getSource).filterNot(Set("*", "`*`").contains(_)),
           target,
-          formatSelection    = formatSelection,
-          keyNamer           = keyNamer,
-          partitionSelection = partitionSelection,
-          commitPolicy       = commitPolicy,
-          localStagingArea   = stagingArea,
-          dataStorage        = storageSettings,
+          formatSelection  = formatSelection,
+          keyNamer         = keyNamer,
+          commitPolicy     = commitPolicy,
+          localStagingArea = stagingArea,
+          dataStorage      = storageSettings,
         )
       }
     }.toSeq.traverse(identity)
@@ -112,12 +111,11 @@ object CloudSinkBucketOptions extends LazyLogging {
 }
 
 case class CloudSinkBucketOptions(
-  sourceTopic:        Option[String],
-  bucketAndPrefix:    CloudLocation,
-  formatSelection:    FormatSelection,
-  keyNamer:           KeyNamer,
-  partitionSelection: PartitionSelection,
-  commitPolicy:       CommitPolicy = CloudCommitPolicy.Default,
-  localStagingArea:   LocalStagingArea,
-  dataStorage:        DataStorageSettings,
+  sourceTopic:      Option[String],
+  bucketAndPrefix:  CloudLocation,
+  formatSelection:  FormatSelection,
+  keyNamer:         KeyNamer,
+  commitPolicy:     CommitPolicy = CloudCommitPolicy.Default,
+  localStagingArea: LocalStagingArea,
+  dataStorage:      DataStorageSettings,
 ) extends WithTransformableDataStorage

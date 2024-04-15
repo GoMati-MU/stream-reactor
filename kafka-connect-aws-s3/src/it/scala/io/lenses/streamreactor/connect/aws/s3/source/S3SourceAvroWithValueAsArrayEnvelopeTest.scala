@@ -1,10 +1,10 @@
 package io.lenses.streamreactor.connect.aws.s3.source
 
 import cats.implicits.catsSyntaxEitherId
-import io.lenses.streamreactor.connect.aws.s3.source.config.SourcePartitionSearcherSettingsKeys
 import io.lenses.streamreactor.connect.aws.s3.storage.AwsS3StorageInterface
 import io.lenses.streamreactor.connect.aws.s3.utils.S3ProxyContainerTest
 import io.lenses.streamreactor.connect.cloud.common.model.UploadableFile
+import io.lenses.streamreactor.connect.cloud.common.source.config.CloudSourceSettingsKeys
 import org.apache.avro.SchemaBuilder
 import org.apache.avro.file.CodecFactory
 import org.apache.avro.file.DataFileWriter
@@ -28,7 +28,7 @@ class S3SourceAvroWithValueAsArrayEnvelopeTest
     with AnyFlatSpecLike
     with Matchers
     with EitherValues
-    with SourcePartitionSearcherSettingsKeys {
+    with CloudSourceSettingsKeys {
 
   def DefaultProps: Map[String, String] = defaultProps + (
     SOURCE_PARTITION_SEARCH_INTERVAL_MILLIS -> "1000",
@@ -105,9 +105,9 @@ class S3SourceAvroWithValueAsArrayEnvelopeTest
     val task = new S3SourceTask()
 
     val props = (defaultProps ++ Map(
-      "connect.s3.kcql"                            -> s"insert into $TopicName select * from $BucketName:$MyPrefix/avro STOREAS `AVRO` LIMIT 1000 PROPERTIES ('store.envelope'=true)",
-      "connect.s3.partition.search.recurse.levels" -> "0",
-      "connect.partition.search.continuous"        -> "false",
+      "connect.s3.kcql"                                   -> s"insert into $TopicName select * from $BucketName:$MyPrefix/avro STOREAS `AVRO` LIMIT 1000 PROPERTIES ('store.envelope'=true)",
+      "connect.s3.source.partition.search.recurse.levels" -> "0",
+      "connect.s3.source.partition.search.continuous"     -> "false",
     )).asJava
 
     task.start(props)

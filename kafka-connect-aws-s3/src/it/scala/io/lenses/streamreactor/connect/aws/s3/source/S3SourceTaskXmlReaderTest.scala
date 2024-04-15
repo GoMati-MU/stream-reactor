@@ -1,10 +1,10 @@
 package io.lenses.streamreactor.connect.aws.s3.source
 
 import cats.implicits._
-import io.lenses.streamreactor.connect.aws.s3.source.config.SourcePartitionSearcherSettingsKeys
 import io.lenses.streamreactor.connect.aws.s3.storage.AwsS3StorageInterface
 import io.lenses.streamreactor.connect.aws.s3.utils.S3ProxyContainerTest
 import io.lenses.streamreactor.connect.cloud.common.model.UploadableFile
+import io.lenses.streamreactor.connect.cloud.common.source.config.CloudSourceSettingsKeys
 import org.apache.kafka.connect.source.SourceRecord
 import org.scalatest.EitherValues
 import org.scalatest.concurrent.Eventually.eventually
@@ -22,7 +22,7 @@ class S3SourceTaskXmlReaderTest
     with AnyFlatSpecLike
     with Matchers
     with EitherValues
-    with SourcePartitionSearcherSettingsKeys {
+    with CloudSourceSettingsKeys {
 
   def DefaultProps: Map[String, String] = defaultProps + (
     SOURCE_PARTITION_SEARCH_INTERVAL_MILLIS -> "1000",
@@ -47,8 +47,8 @@ class S3SourceTaskXmlReaderTest
     val task = new S3SourceTask()
 
     val props = (defaultProps ++ Map(
-      "connect.s3.kcql"                            -> s"insert into $TopicName select * from $BucketName:$PrefixName/xml STOREAS `TEXT` LIMIT 1000 PROPERTIES ( 'read.text.mode'='StartEndTag' , 'read.text.start.tag'='<Employee>' , 'read.text.end.tag'='</Employee>' )",
-      "connect.s3.partition.search.recurse.levels" -> "0",
+      "connect.s3.kcql"                                   -> s"insert into $TopicName select * from $BucketName:$PrefixName/xml STOREAS `TEXT` LIMIT 1000 PROPERTIES ( 'read.text.mode'='StartEndTag' , 'read.text.start.tag'='<Employee>' , 'read.text.end.tag'='</Employee>' )",
+      "connect.s3.source.partition.search.recurse.levels" -> "0",
     )).asJava
 
     task.start(props)

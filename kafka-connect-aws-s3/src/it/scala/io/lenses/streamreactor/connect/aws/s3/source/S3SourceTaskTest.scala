@@ -6,7 +6,6 @@ import com.typesafe.scalalogging.LazyLogging
 import io.lenses.streamreactor.connect.aws.s3.config.S3ConfigSettings._
 import io.lenses.streamreactor.connect.aws.s3.model.location.S3LocationValidator
 import io.lenses.streamreactor.connect.aws.s3.source.S3SourceTaskTest.formats
-import io.lenses.streamreactor.connect.aws.s3.source.config.SourcePartitionSearcherSettingsKeys
 import io.lenses.streamreactor.connect.aws.s3.storage.AwsS3DirectoryLister
 import io.lenses.streamreactor.connect.aws.s3.storage.AwsS3StorageInterface
 import io.lenses.streamreactor.connect.aws.s3.utils.S3ProxyContainerTest
@@ -16,8 +15,7 @@ import io.lenses.streamreactor.connect.cloud.common.config.Format.Bytes
 import io.lenses.streamreactor.connect.cloud.common.config.FormatOptions
 import io.lenses.streamreactor.connect.cloud.common.model.location.CloudLocation
 import io.lenses.streamreactor.connect.cloud.common.model.location.CloudLocationValidator
-import io.lenses.streamreactor.connect.cloud.common.storage.DirectoryFindCompletionConfig
-import io.lenses.streamreactor.connect.cloud.common.storage.DirectoryFindResults
+import io.lenses.streamreactor.connect.cloud.common.source.config.CloudSourceSettingsKeys
 import org.apache.kafka.connect.source.SourceTaskContext
 import org.apache.kafka.connect.storage.OffsetStorageReader
 import org.scalatest.BeforeAndAfter
@@ -30,7 +28,6 @@ import org.scalatest.time.Seconds
 import org.scalatest.time.Span
 
 import java.util
-import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
 object S3SourceTaskTest {
@@ -51,7 +48,7 @@ class S3SourceTaskTest
     with LazyLogging
     with BeforeAndAfter
     with Eventually
-    with SourcePartitionSearcherSettingsKeys {
+    with CloudSourceSettingsKeys {
 
   override implicit def patienceConfig: PatienceConfig =
     PatienceConfig(timeout = Span(10, Seconds), interval = Span(500, Milliseconds))
@@ -59,6 +56,7 @@ class S3SourceTaskTest
   private var bucketSetupOpt:          Option[BucketSetup]    = None
   def bucketSetup:                     BucketSetup            = bucketSetupOpt.getOrElse(throw new IllegalStateException("Not initialised"))
   override def cleanUp():              Unit                   = ()
+  private val filesLimit = 1000
 
   def DefaultProps: Map[String, String] = defaultProps ++
     Seq(
@@ -83,15 +81,13 @@ class S3SourceTaskTest
   "task" should "retrieve subdirectories correctly" in {
     val root = CloudLocation(BucketName, s"${bucketSetup.PrefixName}/avro/myTopic/".some)
     val dirs =
-      AwsS3DirectoryLister.findDirectories(
-        root,
-        DirectoryFindCompletionConfig(0),
-        Set.empty,
-        Set.empty,
-        client.listObjectsV2Paginator(_).iterator().asScala,
-        ConnectorTaskId("name", 1, 1),
+      new AwsS3DirectoryLister(ConnectorTaskId("name", 1, 1), client).findDirectories(root,
+                                                                                      filesLimit,
+                                                                                      0,
+                                                                                      Set.empty,
+                                                                                      Set.empty,
       )
-    dirs.unsafeRunSync() should be(DirectoryFindResults(Set("streamReactorBackups/avro/myTopic/0/")))
+    dirs.unsafeRunSync() should be(Set("streamReactorBackups/avro/myTopic/0/"))
   }
 
   "task" should "read stored files continuously" in {

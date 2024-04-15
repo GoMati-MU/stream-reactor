@@ -11,7 +11,9 @@ on:
       modules:
         description: "Stream reactor collection of modules"
         value: ${{ jobs.initiate.outputs.matrix }}
-
+      dep_check_modules:
+        description: "Modules for dependency checking"
+        value: ${{ jobs.initiate.outputs.dep_check_matrix }}
 jobs:
   initiate:
     timeout-minutes: 5
@@ -20,24 +22,26 @@ jobs:
       matrix: ${{ steps.read-mods.outputs.matrix }}
       it_matrix: ${{ steps.read-mods.outputs.it-matrix }}
       fun_matrix: ${{ steps.read-mods.outputs.fun-matrix }}
+      dep_check_matrix: ${{ steps.read-mods.outputs.dep-check-matrix }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'sbt'
       - name: Generate modules lists
-        run: sbt generateModulesList generateItModulesList generateFunModulesList
+        run: sbt generateModulesList generateItModulesList generateFunModulesList generateDepCheckModulesList
         env:
           JVM_OPTS: -Xmx3200m
       - name: Read modules lists
         id: read-mods
         run: |
-          echo "::set-output name=matrix::$(cat ./target/scala-2.13/resource_managed/main/modules.txt)"
-          echo "::set-output name=it-matrix::$(cat ./target/scala-2.13/resource_managed/main/it-modules.txt)"
-          echo "::set-output name=fun-matrix::$(cat ./target/scala-2.13/resource_managed/main/fun-modules.txt)"
+          echo "matrix=$(cat ./target/scala-2.13/resource_managed/main/modules.txt)" >> $GITHUB_OUTPUT
+          echo "it-matrix=$(cat ./target/scala-2.13/resource_managed/main/it-modules.txt)" >> $GITHUB_OUTPUT
+          echo "fun-matrix=$(cat ./target/scala-2.13/resource_managed/main/fun-modules.txt)" >> $GITHUB_OUTPUT
+          echo "dep-check-matrix=$(cat ./target/scala-2.13/resource_managed/main/depcheck-modules.txt)" >> $GITHUB_OUTPUT
       - name: Cleanup before cache
         shell: bash
         run: |
@@ -49,9 +53,9 @@ jobs:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -75,9 +79,9 @@ jobs:
       matrix:
         module: ${{fromJSON(needs.initiate.outputs.matrix)}}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -87,7 +91,7 @@ jobs:
         env:
           JVM_OPTS: -Xmx3200m
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: "**/target/**/test-reports/*.xml"
@@ -105,9 +109,9 @@ jobs:
       matrix:
         module: ${{fromJSON(needs.initiate.outputs.it_matrix)}}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -117,7 +121,7 @@ jobs:
         env:
           JVM_OPTS: -Xmx3200m
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: "**/target/**/it-reports/*.xml"
@@ -127,20 +131,18 @@ jobs:
   build-and-cache-assembly:
     needs:
       - initiate
-      - test
-      - integration-test
     timeout-minutes: 30
     runs-on: ubuntu-latest
     strategy:
       matrix:
         module: ${{fromJSON(needs.initiate.outputs.matrix)}}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         name: Checkout repository
         with:
           fetch-depth: 0
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
@@ -150,9 +152,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ inputs.version }}" != "" ]; then
-            echo "::set-output name=version::${{ inputs.version }}"
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
           else
-             echo "::set-output name=version::$(git describe --tags --always)"
+            echo "version=$(git describe --tags --always)" >> $GITHUB_OUTPUT
           fi
       - name: Build assembly
         env:
@@ -160,7 +162,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: sbt "project ${{ matrix.module }};set assembly / test := {}" assembly
       - name: Cache assembly
-        uses: actions/cache/save@v3
+        uses: actions/cache/save@v4
         with:
           path: ~/**/target/libs/*.jar
           key: assembly-${{ matrix.module }}-${{ github.run_id }}
@@ -176,15 +178,15 @@ jobs:
         module: ${{fromJSON(needs.initiate.outputs.fun_matrix)}}
         connectImageVersion: [7.3.1, 6.2.2]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'sbt'
       - name: Restore assembly
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/**/target/libs/*.jar
           key: assembly-${{ matrix.module }}-${{ github.run_id }}
@@ -195,7 +197,7 @@ jobs:
           JVM_OPTS: -Xmx3200m
           CONNECT_IMAGE_VERSION: ${{matrix.connectImageVersion}}
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: "**/target/**/test-reports/*.xml"
@@ -210,20 +212,26 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: ${{fromJSON(needs.initiate.outputs.matrix)}}
+        module: ${{fromJSON(needs.initiate.outputs.dep_check_matrix)}}
     steps:
       - name: Restore assembly
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/**/target/libs/*.jar
           key: assembly-${{ matrix.module }}-${{ github.run_id }}
           fail-on-cache-miss: true
+      - name: Get branch names.
+        id: branch_name
+        uses: tj-actions/branch-names@v8
       - name: Dependency Check
-        uses: dependency-check/Dependency-Check_Action@1.1.0
+        uses: dependency-check/Dependency-Check_Action@main
         with:
           project: kafka-connect-${{matrix.module}}-deps
           path: kafka-connect-${{matrix.module}}/target/libs/
           format: 'HTML'
+          args: >-
+              --failOnCVSS 5
+              --suppression https://raw.githubusercontent.com/${{ github.event.pull_request.head.repo.owner.login }}/${{github.event.repository.name}}/${{ steps.branch_name.outputs.tag }}${{ steps.branch_name.outputs.current_branch }}/suppression.xml
       - name: Upload Test results
         uses: actions/upload-artifact@master
         with:
@@ -241,21 +249,21 @@ jobs:
       matrix:
         module: ${{fromJSON(needs.initiate.outputs.matrix)}}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: 'sbt'
       - name: Restore assembly
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: ~/**/target/libs/*.jar
           key: assembly-${{ matrix.module }}-${{ github.run_id }}
           fail-on-cache-miss: true
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: assembly-${{ matrix.module }}-${{ github.run_id }}
           path: ~/**/target/libs/*.jar

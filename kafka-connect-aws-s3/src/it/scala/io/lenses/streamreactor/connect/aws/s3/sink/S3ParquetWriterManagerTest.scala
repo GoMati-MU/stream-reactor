@@ -69,7 +69,7 @@ class S3ParquetWriterManagerTest extends AnyFlatSpec with Matchers with S3ProxyC
 
   private val bucketAndPrefix = CloudLocation(BucketName, PathPrefix.some)
   private def parquetConfig = S3SinkConfig(
-    S3Config(
+    S3ConnectionConfig(
       None,
       Some(s3Container.identity.identity),
       Some(s3Container.identity.credential),
@@ -92,10 +92,9 @@ class S3ParquetWriterManagerTest extends AnyFlatSpec with Matchers with S3ProxyC
             "offset"    -> LeftPadPaddingStrategy(12, 0),
           )),
         ),
-        formatSelection    = ParquetFormatSelection,
-        localStagingArea   = LocalStagingArea(localRoot),
-        partitionSelection = defaultPartitionSelection(Values),
-        dataStorage        = DataStorageSettings.disabled,
+        formatSelection  = ParquetFormatSelection,
+        localStagingArea = LocalStagingArea(localRoot),
+        dataStorage      = DataStorageSettings.disabled,
       ),
     ),
     offsetSeekerOptions = OffsetSeekerOptions(5),

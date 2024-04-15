@@ -59,7 +59,7 @@ object MongoSettings extends StrictLogging {
     val errorPolicy      = config.getErrorPolicy
     val retries          = config.getNumberRetries
     val rowKeyBuilderMap = config.getUpsertKeys(kcql = kcql, preserveFullKeys = true)
-    val fieldsMap        = getFieldsMap(kcql)
+    val fieldsMap        = config.getFieldsMap(kcql)
     val ignoreFields     = config.getIgnoreFieldsMap()
 
     val username = config.getUsername
@@ -112,7 +112,7 @@ object MongoSettings extends StrictLogging {
     *      Seq("top-level-parent", "child1", "child2", "fieldname"),
     *    )
     */
-  def getJsonDateTimeFields(config: MongoConfig): Set[Seq[String]] = {
+  private def getJsonDateTimeFields(config: MongoConfig): Set[Seq[String]] = {
     val set: Set[Seq[String]] =
       config.getList(MongoConfigConstants.JSON_DATETIME_FIELDS_CONFIG).asScala.map { fullName =>
         fullName.trim.split('.').toSeq
@@ -120,7 +120,4 @@ object MongoSettings extends StrictLogging {
     logger.info(s"MongoConfigConstants.JSON_DATETIME_FIELDS_CONFIG is $set")
     set
   }
-
-  def getFieldsMap(kcql: Set[Kcql]): Map[String, Map[String, String]] =
-    kcql.toList.map(rm => (rm.getSource, rm.getFields.asScala.map(fa => (fa.toString, fa.getAlias)).toMap)).toMap
 }

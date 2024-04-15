@@ -1,11 +1,14 @@
+import Dependencies.Versions.kafkaVersion
 import Dependencies.betterMonadicFor
 import Dependencies.globalExcludeDeps
 import Dependencies.googleProtobuf
 import Dependencies.googleProtobufJava
 import Dependencies.hadoopCommon
 import Dependencies.hadoopMapReduceClientCore
+import Dependencies.jsonSmart
 import Dependencies.nettyCodecSocks
 import Dependencies.nettyHandlerProxy
+import Dependencies.nimbusJoseJwt
 import Dependencies.woodstoxCore
 import com.eed3si9n.jarjarabrams.ShadeRule
 import com.simplytyped.Antlr4Plugin
@@ -34,8 +37,8 @@ import scala.sys.process.*
 object Settings extends Dependencies {
 
   // keep the SNAPSHOT version numerically higher than the latest release.
-  val majorVersion        = "6.0"
-  val nextSnapshotVersion = "6.1"
+  val majorVersion        = "6.3"
+  val nextSnapshotVersion = "6.4"
 
   val artifactVersion: String = {
     val maybeGithubRunId = sys.env.get("github_run_id")
@@ -128,7 +131,7 @@ object Settings extends Dependencies {
         ("Git-Commit-Hash", "git rev-parse HEAD".!!.trim),
         ("Git-Repo", "git config --get remote.origin.url".!!.trim),
         ("Git-Tag", sys.env.getOrElse("SNAPSHOT_TAG", "n/a")),
-        ("Kafka-Version", KafkaVersionAxis.kafkaVersion),
+        ("Kafka-Version", kafkaVersion),
         ("StreamReactor-Version", artifactVersion),
         ("StreamReactor-Docs", "https://docs.lenses.io/5.0/integrations/connectors/stream-reactor/"),
       ),
@@ -199,6 +202,7 @@ object Settings extends Dependencies {
             ShadeRule.rename("io.confluent.**" -> "lshaded.confluent.@1").inAll,
             ShadeRule.rename("com.fasterxml.**" -> "lshaded.fasterxml.@1").inAll,
             ShadeRule.rename("org.apache.hadoop" -> "lshaded.apache.hadoop").inAll,
+            ShadeRule.rename("org.antlr.**" -> "lshaded.antlr.@1").inAll,
           ),
           dependencyOverrides ++= Seq(
             googleProtobuf,
@@ -206,6 +210,8 @@ object Settings extends Dependencies {
             hadoopCommon,
             hadoopMapReduceClientCore,
             woodstoxCore,
+            jsonSmart,
+            nimbusJoseJwt,
           ) ++ nettyDepOverrides ++ avroOverrides,
         ),
       )
@@ -300,6 +306,7 @@ object Settings extends Dependencies {
         .settings(
           settings ++ Seq(
             Antlr4 / antlr4PackageName := Some("io.lenses.kcql.antlr4"),
+            Antlr4 / antlr4Version := Dependencies.Versions.antlr4Version,
           ),
         )
   }
