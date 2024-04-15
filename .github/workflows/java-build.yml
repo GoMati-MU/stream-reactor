@@ -1,6 +1,5 @@
 name: CI-java
 on:
-  push:
   pull_request:
   workflow_call:
     inputs:
@@ -9,12 +8,12 @@ on:
         type: string
     outputs:
       modules:
-        description: "Stream reactor collection of modules"
-        value: ${{ jobs.initiate.outputs.matrix }}
+        description: "Stream reactor collection of java modules"
+        value: ${{ jobs.initiate-java-modules.outputs.matrix }}
 
 jobs:
 
-  initiate:
+  initiate-java-modules:
     timeout-minutes: 5
     runs-on: ubuntu-latest
     outputs:
@@ -38,10 +37,10 @@ jobs:
 
   test:
     needs:
-      - initiate
+      - initiate-java-modules
     strategy:
       matrix:
-        module: ${{fromJSON(needs.initiate.outputs.matrix)}}
+        module: ${{fromJSON(needs.initiate-java-modules.outputs.matrix)}}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,10 +62,10 @@ jobs:
   build-and-cache:
     needs:
       - test
-      - initiate
+      - initiate-java-modules
     strategy:
       matrix:
-        module: ${{fromJSON(needs.initiate.outputs.matrix)}}
+        module: ${{fromJSON(needs.initiate-java-modules.outputs.matrix)}}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -102,12 +101,12 @@ jobs:
   jar-dependency-check:
     needs:
       - build-and-cache
-      - initiate
+      - initiate-java-modules
     timeout-minutes: 30
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: ${{fromJSON(needs.initiate.outputs.matrix)}}
+        module: ${{fromJSON(needs.initiate-java-modules.outputs.matrix)}}
     steps:
       - name: Restore assembly
         uses: actions/cache/restore@v4
@@ -119,15 +118,15 @@ jobs:
       - name: Get branch names.
         id: branch_name
         uses: tj-actions/branch-names@v8
-      - name: Dependency Check
-        uses: dependency-check/Dependency-Check_Action@1.1.0
+      - name: JAR Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
         with:
           project: kafka-connect-${{matrix.module}}-deps
           path: ./java-connectors/release/${{ matrix.module }}*.jar
           format: 'HTML'
           args: >-
             --failOnCVSS 5
-            --suppression https://raw.githubusercontent.com/${{ github.event.pull_request.head.repo.owner.login }}/${{github.event.repository.name}}/${{ steps.branch_name.outputs.tag }}${{ steps.branch_name.outputs.current_branch }}/suppression.xml      - name: Upload Test results
+            --suppression https://raw.githubusercontent.com/${{ github.event.pull_request.head.repo.owner.login }}/${{github.event.repository.name}}/${{ steps.branch_name.outputs.tag }}${{ steps.branch_name.outputs.current_branch }}/suppression.xml
 
       - name: Upload Test results
         uses: actions/upload-artifact@master
