@@ -115,9 +115,13 @@ jobs:
           key: assembly-java-${{ github.run_id }}
           fail-on-cache-miss: true
 
+      - name: Execute Gradle build
+        run: echo ${{ github.event.pull_request }}
+
       - name: Get branch names.
         id: branch_name
         uses: tj-actions/branch-names@v8
+
       - name: JAR Dependency Check
         uses: dependency-check/Dependency-Check_Action@main
         with:
@@ -126,7 +130,7 @@ jobs:
           format: 'HTML'
           args: >-
             --failOnCVSS 5
-            --suppression https://raw.githubusercontent.com/GoMati-MU/stream-reactor/master/suppression.xml
+            --suppression https://raw.githubusercontent.com/${{ github.event.pull_request.head.repo.owner.login }}/${{github.event.repository.name}}/${{ steps.branch_name.outputs.tag }}${{ steps.branch_name.outputs.current_branch }}/suppression.xml
 
       - name: Upload Test results
         uses: actions/upload-artifact@master
