@@ -1,5 +1,4 @@
-name: Publish New Release
-
+name: Publish New Java Release
 on:
   push:
     tags:
@@ -14,7 +13,7 @@ jobs:
       tag: ${{ steps.get_tag.outputs.tag }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -25,7 +24,6 @@ jobs:
           if [[ ${GITHUB_REF##*/} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]];
           then
               draft_release=false
-          
           elif [[ ${GITHUB_REF##*/} =~ ^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)(\.[0-9]+)?)?(\+[A-Za-z0-9.]+)?$ ]];
           then
               draft_release=true
@@ -33,13 +31,13 @@ jobs:
               echo "Exiting, github ref needs to be a tag with format x.y.z or x.y.z-(alpha|beta|rc)"
               exit 1
           fi
-          echo "::set-output name=draft_release::$draft_release"
-          echo "::set-output name=tag::${GITHUB_REF##*/}"
+          echo "draft_release=$draft_release" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
 
   build:
     needs:
       - validate-tag
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/java-build.yml
     with:
       version: ${{ needs.validate-tag.outputs.tag }}
     secrets: inherit
@@ -56,41 +54,42 @@ jobs:
       # If any matrix job fails, the job will be marked as failure
       fail-fast: false
       matrix:
-        module: ${{fromJSON(needs.build.outputs.modules)}}
+        module: ${{fromJSON(needs.build.outputs.java_modules)}}
     env:
       DRAFT_RELEASE: '${{ needs.validate-tag.outputs.draft_release }}'
       TAG: ${{ needs.validate-tag.outputs.tag }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'sbt'
+          cache: 'gradle'
 
       - name: Uncache assembly
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v4
         with:
           path: |
-            ~/**/target/libs/*.jar
-          key: assembly-${{ matrix.module }}-${{ github.run_id }}
+            ./java-connectors/release/${{ matrix.module }}*.jar
+          key: assembly-java-${{ github.run_id }}
           fail-on-cache-miss: true
 
       - name: Package Connector
         shell: bash
         run: |
-          FOLDER=kafka-connect-${{ matrix.module }}-${{ env.TAG }}
+          JAVA_RELEASE_FOLDER=java-connectors/release
+          FOLDER=${{ matrix.module }}-${{ env.TAG }}
           mkdir -p $FOLDER
-          cp **/target/libs/*.jar LICENSE $FOLDER/
+          cp $JAVA_RELEASE_FOLDER/${{ matrix.module }}*.jar LICENSE $FOLDER/
           zip -r "$FOLDER.zip" $FOLDER/
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
-          file: kafka-connect-${{ matrix.module }}-${{ env.TAG }}.zip
-          asset_name: "kafka-connect-${{ matrix.module }}-${{ env.TAG }}.zip"
+          file: ${{ matrix.module }}-${{ env.TAG }}.zip
+          asset_name: "${{ matrix.module }}-${{ env.TAG }}.zip"
           release_name: 'Stream Reactor ${{ env.TAG }}'
           prerelease: ${{ env.DRAFT_RELEASE }}
