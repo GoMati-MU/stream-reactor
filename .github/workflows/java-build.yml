@@ -115,7 +115,7 @@ jobs:
           key: assembly-java-${{ github.run_id }}
           fail-on-cache-miss: true
 
-      - name: Execute Gradle build
+      - name: Echo PR
         run: echo ${{ github.event.pull_request }}
 
       - name: Get branch names.
